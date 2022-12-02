@@ -1,0 +1,958 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2022-11-28 Mon 20:52 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Starlette 源码分析</title>
+<meta name="author" content="Mering Gao" />
+<meta name="generator" content="Org Mode" />
+<style>
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+</style>
+<link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Starlette 源码分析</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orgc1dfd2a">1. 服务的执行流程</a>
+<ul>
+<li><a href="#org14399a5">1.1. 执行流程的源码先分析一下</a>
+<ul>
+<li><a href="#orgd0bb992">1.1.1. Starlette</a></li>
+<li><a href="#org1c9076f">1.1.2. ServerErrorMiddleware</a></li>
+<li><a href="#org4fbf6d1">1.1.3. ExceptionMiddleware</a></li>
+<li><a href="#orge272056">1.1.4. Router</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-orgc1dfd2a" class="outline-2">
+<h2 id="orgc1dfd2a"><span class="section-number-2">1.</span> 服务的执行流程</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Starlette 的执行包含 3 个流程
+</p>
+<ul class="org-ul">
+<li>服务启动时, 也就是 asgi 的 startup 事件</li>
+<li>处理用户请求时, 也就是 asgi 的 http, websocket 事件</li>
+<li>服务停止时, 也就是 asgi 的 shutdown 事件</li>
+</ul>
+
+<p>
+3 个执行流程入口都是 <code>starlette.application.Starlette.__call__(scope, receive, send)</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-text">starlette.application.Starlette.__call__(scope, receive, send)
+--&gt; ServerErrorMiddleware
+----&gt; ExceptionMiddleware
+------&gt; &#33258;&#23450;&#20041;&#20013;&#38388;&#20214;
+--------&gt; Router
+----------&gt; &#19994;&#21153;&#25509;&#21475;&#20989;&#25968;
+</pre>
+</div>
+
+<p>
+每一个中间件都是一个可调用对象, 并且接受 3 个参数,也就是 asgi 协议的三个参数: scope, receive, send.
+</p>
+</div>
+
+<div id="outline-container-org14399a5" class="outline-3">
+<h3 id="org14399a5"><span class="section-number-3">1.1.</span> 执行流程的源码先分析一下</h3>
+<div class="outline-text-3" id="text-1-1">
+</div>
+<div id="outline-container-orgd0bb992" class="outline-4">
+<h4 id="orgd0bb992"><span class="section-number-4">1.1.1.</span> Starlette</h4>
+<div class="outline-text-4" id="text-1-1-1">
+<ul class="org-ul">
+<li>这一层是服务的入口, 包含三个作用, 服务启动时, asgi <code>startup</code> 事件的执行, 以及服务停止时 asgi <code>shutdown</code> 事件的执行, 客户端请求的处理.</li>
+<li>上面的执行流程的构建也是在这里构建的, 也就是中间件的加载</li>
+<li>服务的路由的,嵌套路由也是在这里构建</li>
+<li>服务的异常处理配置也是在这里定义的</li>
+<li>服务的 startup 和 shutdown 事件的绑定也是在这里,但是是绑定到 router 对象中的</li>
+</ul>
+</div>
+
+<ol class="org-ol">
+<li><a id="org0a3e2a2"></a>流程的源码<br />
+<div class="outline-text-5" id="text-1-1-1-1">
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">async def</span> <span class="org-function-name">__call__</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope, receive: Receive, send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"app"</span><span class="org-rainbow-delimiters-depth-1">]</span> = <span class="org-keyword">self</span>
+        <span class="org-keyword">await</span> <span class="org-keyword">self</span>.middleware_stack<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+</pre>
+</div>
+
+<p>
+<b>Tips</b>:这里可以看出他就是往 scope 中添加了 app 属性作为对象本身, 也就是说后续的调用链路中都可以通过 scope 拿到 starlette 对象.
+</p>
+</div>
+</li>
+
+<li><a id="org7eee0ec"></a><code>middleware_stack</code><br />
+<div class="outline-text-5" id="text-1-1-1-2">
+<p>
+这里的 <code>middleware_stack</code> 是就是包含了最上面的执行流程, 有点类似于常见的多层次装饰器
+</p>
+
+<p>
+<code>Starlette.middleware_stack</code> 属性是在 Starlette 对象创建时就构建了.
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">class</span> <span class="org-type">Starlette</span>:
+    <span class="org-keyword">def</span> <span class="org-function-name">__init__</span><span class="org-rainbow-delimiters-depth-1">(</span>
+        <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+        middleware: typing.Optional<span class="org-rainbow-delimiters-depth-2">[</span>typing.Sequence<span class="org-rainbow-delimiters-depth-3">[</span>Middleware<span class="org-rainbow-delimiters-depth-3">]</span><span class="org-rainbow-delimiters-depth-2">]</span> = <span class="org-constant">None</span>,
+        exception_handlers: typing.Optional<span class="org-rainbow-delimiters-depth-2">[</span>
+            typing.Mapping<span class="org-rainbow-delimiters-depth-3">[</span>
+                typing.Any,
+                typing.Callable<span class="org-rainbow-delimiters-depth-4">[</span>
+                    <span class="org-rainbow-delimiters-depth-5">[</span>Request, <span class="org-type">Exception</span><span class="org-rainbow-delimiters-depth-5">]</span>,
+                    typing.Union<span class="org-rainbow-delimiters-depth-5">[</span>Response, typing.Awaitable<span class="org-rainbow-delimiters-depth-6">[</span>Response<span class="org-rainbow-delimiters-depth-6">]</span><span class="org-rainbow-delimiters-depth-5">]</span>,
+                <span class="org-rainbow-delimiters-depth-4">]</span>,
+            <span class="org-rainbow-delimiters-depth-3">]</span>
+        <span class="org-rainbow-delimiters-depth-2">]</span> = <span class="org-constant">None</span>,
+        <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+    <span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+        <span class="org-keyword">self</span>.exception_handlers = <span class="org-rainbow-delimiters-depth-1">(</span>
+            <span class="org-rainbow-delimiters-depth-2">{}</span> <span class="org-keyword">if</span> exception_handlers <span class="org-keyword">is</span> <span class="org-constant">None</span> <span class="org-keyword">else</span> <span class="org-builtin">dict</span><span class="org-rainbow-delimiters-depth-2">(</span>exception_handlers<span class="org-rainbow-delimiters-depth-2">)</span>
+        <span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">self</span>.user_middleware = <span class="org-rainbow-delimiters-depth-1">[]</span> <span class="org-keyword">if</span> middleware <span class="org-keyword">is</span> <span class="org-constant">None</span> <span class="org-keyword">else</span> <span class="org-builtin">list</span><span class="org-rainbow-delimiters-depth-1">(</span>middleware<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">self</span>.middleware_stack = <span class="org-keyword">self</span>.build_middleware_stack<span class="org-rainbow-delimiters-depth-1">()</span>
+
+    <span class="org-keyword">def</span> <span class="org-function-name">build_middleware_stack</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span><span class="org-rainbow-delimiters-depth-1">)</span> -&gt; ASGIApp:
+        debug = <span class="org-keyword">self</span>.debug
+        error_handler = <span class="org-constant">None</span>
+        exception_handlers: typing.Dict<span class="org-rainbow-delimiters-depth-1">[</span>
+            typing.Any, typing.Callable<span class="org-rainbow-delimiters-depth-2">[</span><span class="org-rainbow-delimiters-depth-3">[</span>Request, <span class="org-type">Exception</span><span class="org-rainbow-delimiters-depth-3">]</span>, Response<span class="org-rainbow-delimiters-depth-2">]</span>
+        <span class="org-rainbow-delimiters-depth-1">]</span> = <span class="org-rainbow-delimiters-depth-1">{}</span>
+
+        <span class="org-keyword">for</span> key, value <span class="org-keyword">in</span> <span class="org-keyword">self</span>.exception_handlers.items<span class="org-rainbow-delimiters-depth-1">()</span>:
+            <span class="org-keyword">if</span> key <span class="org-keyword">in</span> <span class="org-rainbow-delimiters-depth-1">(</span>500, <span class="org-type">Exception</span><span class="org-rainbow-delimiters-depth-1">)</span>:
+                error_handler = value
+            <span class="org-keyword">else</span>:
+                exception_handlers<span class="org-rainbow-delimiters-depth-1">[</span>key<span class="org-rainbow-delimiters-depth-1">]</span> = value
+
+        middleware = <span class="org-rainbow-delimiters-depth-1">(</span>
+            <span class="org-rainbow-delimiters-depth-2">[</span>Middleware<span class="org-rainbow-delimiters-depth-3">(</span>ServerErrorMiddleware, handler=error_handler, debug=debug<span class="org-rainbow-delimiters-depth-3">)</span><span class="org-rainbow-delimiters-depth-2">]</span>
+            + <span class="org-keyword">self</span>.user_middleware
+            + <span class="org-rainbow-delimiters-depth-2">[</span>
+                Middleware<span class="org-rainbow-delimiters-depth-3">(</span>
+                    ExceptionMiddleware, handlers=exception_handlers, debug=debug
+                <span class="org-rainbow-delimiters-depth-3">)</span>
+            <span class="org-rainbow-delimiters-depth-2">]</span>
+        <span class="org-rainbow-delimiters-depth-1">)</span>
+
+        app = <span class="org-keyword">self</span>.router
+        <span class="org-keyword">for</span> cls, options <span class="org-keyword">in</span> <span class="org-builtin">reversed</span><span class="org-rainbow-delimiters-depth-1">(</span>middleware<span class="org-rainbow-delimiters-depth-1">)</span>:
+            app = cls<span class="org-rainbow-delimiters-depth-1">(</span>app=app, **options<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">return</span> app
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-variable-name">middleware</span> = <span class="org-rainbow-delimiters-depth-1">(</span>
+              <span class="org-rainbow-delimiters-depth-2">[</span>Middleware<span class="org-rainbow-delimiters-depth-3">(</span>ServerErrorMiddleware, handler=error_handler, debug=debug<span class="org-rainbow-delimiters-depth-3">)</span><span class="org-rainbow-delimiters-depth-2">]</span>
+              + <span class="org-keyword">self</span>.user_middleware
+              + <span class="org-rainbow-delimiters-depth-2">[</span>
+                  Middleware<span class="org-rainbow-delimiters-depth-3">(</span>
+                      ExceptionMiddleware, handlers=exception_handlers, debug=debug
+                  <span class="org-rainbow-delimiters-depth-3">)</span>
+              <span class="org-rainbow-delimiters-depth-2">]</span>
+          <span class="org-rainbow-delimiters-depth-1">)</span>
+app = <span class="org-keyword">self</span>.router
+<span class="org-keyword">for</span> cls, options <span class="org-keyword">in</span> <span class="org-builtin">reversed</span><span class="org-rainbow-delimiters-depth-1">(</span>middleware<span class="org-rainbow-delimiters-depth-1">)</span>:
+    app = cls<span class="org-rainbow-delimiters-depth-1">(</span>app=app, **options<span class="org-rainbow-delimiters-depth-1">)</span>
+<span class="org-keyword">return</span> app
+</pre>
+</div>
+<p>
+从这里可以看出 ServerErrorMiddleware 是最外层的调用, 并且有个 <code>error_handler</code> 参数, 这个参数从上面可以看出, 如果 <code>exception_handlers</code> 字典中包含了 500 这个错误码对应的异常处理器的话, ServerMiddleware 在执行过程中发生错误时就会使用该函数进行处理.
+</p>
+
+<p>
+中间是用户自定义的中间件
+</p>
+
+<p>
+ExceptionMiddleware 是最内第二层, 且接受了 <code>exception_handlers</code> 参数作为其调用发生异常时的各种异常情况的处理器调用
+</p>
+
+<p>
+<code>app = self.router</code> 才是真正的最内一层, router 就是一个 Router 对象, 包含了所有的 Route 列表(Route 就是定义的路由)
+</p>
+<div class="org-src-container">
+<pre class="src src-python">
+<span class="org-keyword">class</span> <span class="org-type">Starlette</span>:
+    <span class="org-keyword">def</span> <span class="org-function-name">__init__</span><span class="org-rainbow-delimiters-depth-1">(</span>
+        <span class="org-keyword">self</span>,
+        debug: <span class="org-builtin">bool</span> = <span class="org-constant">False</span>,
+        routes: typing.Optional<span class="org-rainbow-delimiters-depth-2">[</span>typing.Sequence<span class="org-rainbow-delimiters-depth-3">[</span>BaseRoute<span class="org-rainbow-delimiters-depth-3">]</span><span class="org-rainbow-delimiters-depth-2">]</span> = <span class="org-constant">None</span>,
+        <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+    <span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+        <span class="org-keyword">self</span>.router = Router<span class="org-rainbow-delimiters-depth-1">(</span>
+            routes, on_startup=on_startup, on_shutdown=on_shutdown, lifespan=lifespan
+        <span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+</pre>
+</div>
+
+<p>
+<b>Tips</b>:
+</p>
+<ul class="org-ul">
+<li>如果希望在服务启动和停止的执行过程中加入自定义的内容, 那么久可以通过中间件结合判断 <code>scope['type']=='lifespan'</code> 来实现;</li>
+<li>如果是想在http 或者websocket 请求处理过程中加入自定义的内容,就可以使用中间件,并且结合 <code>scope['type']=='http' 或者 'websocket'</code> 来实现</li>
+<li>如果是想在服务请求过程中抛出特定异常并且能够全局补货处理, 那么可以自定义异常类, 并且在配置该异常类对应的处理函数</li>
+<li>如果不希望使用Startlett 默认的中间件,那么可以继承子类, 并修改 <code>middlware_stack</code>, 实际上完全可以自己按照 asgi 协议开发一个完全自定义的框架, 只是无法使用现成的代码了</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+
+<div id="outline-container-org1c9076f" class="outline-4">
+<h4 id="org1c9076f"><span class="section-number-4">1.1.2.</span> ServerErrorMiddleware</h4>
+<div class="outline-text-4" id="text-1-1-2">
+<p>
+他对全局的执行流程进行异常捕获, 并且对异常进行处理.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">class</span> <span class="org-type">ServerErrorMiddleware</span>:
+    <span class="org-doc">"""</span>
+<span class="org-doc">    Handles returning 500 responses when a server error occurs.</span>
+
+<span class="org-doc">    If 'debug' is set, then traceback responses will be returned,</span>
+<span class="org-doc">    otherwise the designated 'handler' will be called.</span>
+
+<span class="org-doc">    This middleware class should generally be used to wrap *everything*</span>
+<span class="org-doc">    else up, so that unhandled exceptions anywhere in the stack</span>
+<span class="org-doc">    always result in an appropriate 500 response.</span>
+<span class="org-doc">    """</span>
+
+    <span class="org-keyword">def</span> <span class="org-function-name">__init__</span><span class="org-rainbow-delimiters-depth-1">(</span>
+        <span class="org-keyword">self</span>,
+        app: ASGIApp,
+        handler: typing.Optional<span class="org-rainbow-delimiters-depth-2">[</span>typing.Callable<span class="org-rainbow-delimiters-depth-2">]</span> = <span class="org-constant">None</span>,
+        debug: <span class="org-builtin">bool</span> = <span class="org-constant">False</span>,
+    <span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-keyword">self</span>.app = app
+        <span class="org-keyword">self</span>.handler = handler
+        <span class="org-keyword">self</span>.debug = debug
+
+    <span class="org-keyword">async def</span> <span class="org-function-name">__call__</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope, receive: Receive, send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-keyword">if</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> != <span class="org-string">"http"</span>:
+            <span class="org-keyword">await</span> <span class="org-keyword">self</span>.app<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+            <span class="org-keyword">return</span>
+
+        response_started = <span class="org-constant">False</span>
+
+        <span class="org-keyword">async def</span> <span class="org-function-name">_send</span><span class="org-rainbow-delimiters-depth-1">(</span>message: Message<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+            <span class="org-keyword">nonlocal</span> response_started, send
+
+            <span class="org-keyword">if</span> message<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> == <span class="org-string">"http.response.start"</span>:
+                response_started = <span class="org-constant">True</span>
+            <span class="org-keyword">await</span> send<span class="org-rainbow-delimiters-depth-1">(</span>message<span class="org-rainbow-delimiters-depth-1">)</span>
+
+        <span class="org-keyword">try</span>:
+            <span class="org-keyword">await</span> <span class="org-keyword">self</span>.app<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, _send<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">except</span> <span class="org-type">Exception</span> <span class="org-keyword">as</span> exc:
+            request = Request<span class="org-rainbow-delimiters-depth-1">(</span>scope<span class="org-rainbow-delimiters-depth-1">)</span>
+            <span class="org-keyword">if</span> <span class="org-keyword">self</span>.debug:
+                <span class="org-comment-delimiter"># </span><span class="org-comment">In debug mode, return traceback responses.</span>
+                response = <span class="org-keyword">self</span>.debug_response<span class="org-rainbow-delimiters-depth-1">(</span>request, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+            <span class="org-keyword">elif</span> <span class="org-keyword">self</span>.handler <span class="org-keyword">is</span> <span class="org-constant">None</span>:
+                <span class="org-comment-delimiter"># </span><span class="org-comment">Use our default 500 error handler.</span>
+                response = <span class="org-keyword">self</span>.error_response<span class="org-rainbow-delimiters-depth-1">(</span>request, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+            <span class="org-keyword">else</span>:
+                <span class="org-comment-delimiter"># </span><span class="org-comment">Use an installed 500 error handler.</span>
+                <span class="org-keyword">if</span> is_async_callable<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>.handler<span class="org-rainbow-delimiters-depth-1">)</span>:
+                    response = <span class="org-keyword">await</span> <span class="org-keyword">self</span>.handler<span class="org-rainbow-delimiters-depth-1">(</span>request, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+                <span class="org-keyword">else</span>:
+                    response = <span class="org-keyword">await</span> run_in_threadpool<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>.handler, request, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+
+            <span class="org-keyword">if</span> <span class="org-keyword">not</span> response_started:
+                <span class="org-keyword">await</span> response<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+
+            <span class="org-comment-delimiter"># </span><span class="org-comment">We always continue to raise the exception.</span>
+            <span class="org-comment-delimiter"># </span><span class="org-comment">This allows servers to log the error, or allows test clients</span>
+            <span class="org-comment-delimiter"># </span><span class="org-comment">to optionally raise the error within the test case.</span>
+            <span class="org-keyword">raise</span> exc
+</pre>
+</div>
+
+<p>
+异常捕获在 try except 处
+</p>
+
+<p>
+如果有异常发生时
+</p>
+<ul class="org-ul">
+<li>且当前的 debug 模式, 那么就会将异常的调用栈构建成网页返回给客户端</li>
+<li>如果不是 debug 模式,
+<ul class="org-ul">
+<li>并且 handler 配置了(这个 handler 是实例化 starlette 对象时传递的 <code>exception_handlers</code> 中 500 状态码对应的 handler), 那么就用这个 handler 进行处理. <b>这里要注意, handler 可以是协程对象也可以是普通函数, 他们都接受两个参数(request,exc) 且需要返回一个可调用对象, 该对象接受 (scope, receive, send) 三个参数 并且需要对客户端进行响应</b></li>
+<li>如果没有 handler 就直接使用 <code>PlainTextResponse("Internal Server Error", status_code=500)(scope, receive, send)</code> 返回给客户端, 也就是返回一个 500 的错误, 且响应体是 "Internal Server Error"</li>
+</ul></li>
+</ul>
+
+<p>
+<b>Tips</b>: 如果想要更改默认的服务器异常处理, 那么配置异常处理函数时,指定 500 状态码即可
+</p>
+</div>
+</div>
+
+<div id="outline-container-org4fbf6d1" class="outline-4">
+<h4 id="org4fbf6d1"><span class="section-number-4">1.1.3.</span> ExceptionMiddleware</h4>
+<div class="outline-text-4" id="text-1-1-3">
+<p>
+这个异常处理事在 Router 的上一层进行的, 主要是对 Router 下层的异常进行捕获, 并且在发生异常时对特定异常进行处理了:
+</p>
+<ul class="org-ul">
+<li></li>
+</ul>
+
+<div class="org-src-container">
+<pre class="src src-python">
+<span class="org-keyword">class</span> <span class="org-type">ExceptionMiddleware</span>:
+    <span class="org-keyword">def</span> <span class="org-function-name">__init__</span><span class="org-rainbow-delimiters-depth-1">(</span>
+        <span class="org-keyword">self</span>,
+        app: ASGIApp,
+        handlers: typing.Optional<span class="org-rainbow-delimiters-depth-2">[</span>
+            typing.Mapping<span class="org-rainbow-delimiters-depth-3">[</span>typing.Any, typing.Callable<span class="org-rainbow-delimiters-depth-4">[</span><span class="org-rainbow-delimiters-depth-5">[</span>Request, <span class="org-type">Exception</span><span class="org-rainbow-delimiters-depth-5">]</span>, Response<span class="org-rainbow-delimiters-depth-4">]</span><span class="org-rainbow-delimiters-depth-3">]</span>
+        <span class="org-rainbow-delimiters-depth-2">]</span> = <span class="org-constant">None</span>,
+        debug: <span class="org-builtin">bool</span> = <span class="org-constant">False</span>,
+    <span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-keyword">self</span>.app = app
+        <span class="org-keyword">self</span>.debug = debug  <span class="org-comment-delimiter"># </span><span class="org-comment">TODO: We ought to handle 404 cases if debug is set.</span>
+        <span class="org-keyword">self</span>._status_handlers: typing.Dict<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-builtin">int</span>, typing.<span class="org-variable-name">Callable</span><span class="org-rainbow-delimiters-depth-1">]</span> = <span class="org-rainbow-delimiters-depth-1">{}</span>
+        <span class="org-keyword">self</span>._exception_handlers: typing.Dict<span class="org-rainbow-delimiters-depth-1">[</span>
+            typing.Type<span class="org-rainbow-delimiters-depth-2">[</span><span class="org-type">Exception</span><span class="org-rainbow-delimiters-depth-2">]</span>, typing.Callable
+        <span class="org-rainbow-delimiters-depth-1">]</span> = <span class="org-rainbow-delimiters-depth-1">{</span>
+            HTTPException: <span class="org-keyword">self</span>.http_exception,
+            WebSocketException: <span class="org-keyword">self</span>.websocket_exception,
+        <span class="org-rainbow-delimiters-depth-1">}</span>
+        <span class="org-keyword">if</span> handlers <span class="org-keyword">is</span> <span class="org-keyword">not</span> <span class="org-constant">None</span>:
+            <span class="org-keyword">for</span> key, value <span class="org-keyword">in</span> handlers.items<span class="org-rainbow-delimiters-depth-1">()</span>:
+                <span class="org-keyword">self</span>.add_exception_handler<span class="org-rainbow-delimiters-depth-1">(</span>key, value<span class="org-rainbow-delimiters-depth-1">)</span>
+
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+
+    <span class="org-keyword">async def</span> <span class="org-function-name">__call__</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope, receive: Receive, send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-keyword">if</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> <span class="org-keyword">not</span> <span class="org-keyword">in</span> <span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"http"</span>, <span class="org-string">"websocket"</span><span class="org-rainbow-delimiters-depth-1">)</span>:
+            <span class="org-keyword">await</span> <span class="org-keyword">self</span>.app<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+            <span class="org-keyword">return</span>
+
+        response_started = <span class="org-constant">False</span>
+
+        <span class="org-keyword">async def</span> <span class="org-function-name">sender</span><span class="org-rainbow-delimiters-depth-1">(</span>message: Message<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+            <span class="org-keyword">nonlocal</span> response_started
+
+            <span class="org-keyword">if</span> message<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> == <span class="org-string">"http.response.start"</span>:
+                response_started = <span class="org-constant">True</span>
+            <span class="org-keyword">await</span> send<span class="org-rainbow-delimiters-depth-1">(</span>message<span class="org-rainbow-delimiters-depth-1">)</span>
+
+        <span class="org-keyword">try</span>:
+            <span class="org-keyword">await</span> <span class="org-keyword">self</span>.app<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, sender<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">except</span> <span class="org-type">Exception</span> <span class="org-keyword">as</span> exc:
+            handler = <span class="org-constant">None</span>
+
+            <span class="org-keyword">if</span> <span class="org-builtin">isinstance</span><span class="org-rainbow-delimiters-depth-1">(</span>exc, HTTPException<span class="org-rainbow-delimiters-depth-1">)</span>:
+                handler = <span class="org-keyword">self</span>._status_handlers.get<span class="org-rainbow-delimiters-depth-1">(</span>exc.status_code<span class="org-rainbow-delimiters-depth-1">)</span>
+
+            <span class="org-keyword">if</span> handler <span class="org-keyword">is</span> <span class="org-constant">None</span>:
+                handler = <span class="org-keyword">self</span>._lookup_exception_handler<span class="org-rainbow-delimiters-depth-1">(</span>exc<span class="org-rainbow-delimiters-depth-1">)</span>
+
+            <span class="org-keyword">if</span> handler <span class="org-keyword">is</span> <span class="org-constant">None</span>:
+                <span class="org-keyword">raise</span> exc
+
+            <span class="org-keyword">if</span> response_started:
+                msg = <span class="org-string">"Caught handled exception, but response already started."</span>
+                <span class="org-keyword">raise</span> <span class="org-type">RuntimeError</span><span class="org-rainbow-delimiters-depth-1">(</span>msg<span class="org-rainbow-delimiters-depth-1">)</span> <span class="org-keyword">from</span> exc
+
+            <span class="org-keyword">if</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> == <span class="org-string">"http"</span>:
+                request = Request<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive=receive<span class="org-rainbow-delimiters-depth-1">)</span>
+                <span class="org-keyword">if</span> is_async_callable<span class="org-rainbow-delimiters-depth-1">(</span>handler<span class="org-rainbow-delimiters-depth-1">)</span>:
+                    response = <span class="org-keyword">await</span> handler<span class="org-rainbow-delimiters-depth-1">(</span>request, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+                <span class="org-keyword">else</span>:
+                    response = <span class="org-keyword">await</span> run_in_threadpool<span class="org-rainbow-delimiters-depth-1">(</span>handler, request, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+                <span class="org-keyword">await</span> response<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, sender<span class="org-rainbow-delimiters-depth-1">)</span>
+            <span class="org-keyword">elif</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> == <span class="org-string">"websocket"</span>:
+                websocket = WebSocket<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive=receive, send=send<span class="org-rainbow-delimiters-depth-1">)</span>
+                <span class="org-keyword">if</span> is_async_callable<span class="org-rainbow-delimiters-depth-1">(</span>handler<span class="org-rainbow-delimiters-depth-1">)</span>:
+                    <span class="org-keyword">await</span> handler<span class="org-rainbow-delimiters-depth-1">(</span>websocket, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+                <span class="org-keyword">else</span>:
+                    <span class="org-keyword">await</span> run_in_threadpool<span class="org-rainbow-delimiters-depth-1">(</span>handler, websocket, exc<span class="org-rainbow-delimiters-depth-1">)</span>
+
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+</pre>
+</div>
+
+<p>
+他本身是包含两个预置的异常处理函数的
+</p>
+<dl class="org-dl">
+<dt>HTTPException 对应的处理函数</dt><dd>如果状态码是 204 或 304 返回 <code>Response(status_code=exc.status_code, headers=exc.headers)</code>
+否则返回 <code>PlainTextResponse(exc.detail, status_code=exc.status_code, headers=exc.headers)</code></dd>
+<dt>WebSocketException 对应的处理函数</dt><dd>直接关闭 socket 连接</dd>
+</dl>
+
+<p>
+异常处理的过程
+</p>
+<ul class="org-ul">
+<li>如果异常类型是 HTTPException, 那么会检查该异常对应状态码是否有对应的处理函数</li>
+<li>如果没有 Http 异常对应的处理函数, 就根据 异常类型 再次检查该异常类型是否有对应的处理函数.</li>
+<li>如果都没有找到异常处理函数就会抛出异常. 该异常会由上一层的 ServerErrorMiddleware 捕获处理</li>
+</ul>
+
+<p>
+<b>Tips</b>: 请求处理过程中,如果想要直接返回HTTP 错误, 可以在代码中抛出HTTPExcption 异常, 但是要注意,一般 HTTPException 的状态码应该是 400 以上
+</p>
+</div>
+</div>
+
+<div id="outline-container-orge272056" class="outline-4">
+<h4 id="orge272056"><span class="section-number-4">1.1.4.</span> Router</h4>
+<div class="outline-text-4" id="text-1-1-4">
+<p>
+Router 有两个作用
+</p>
+<ul class="org-ul">
+<li>匹配客户端请求的路径找对对应的业务处理函数</li>
+<li>asgi startup 和 shutdown 的执行</li>
+</ul>
+</div>
+
+<ol class="org-ol">
+<li><a id="org8bc4b84"></a>startup 和 shutdown 部分<br />
+<div class="outline-text-5" id="text-1-1-4-1">
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">async def</span> <span class="org-function-name">__call__</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope, receive: Receive,
+                   send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+    <span class="org-doc">"""</span>
+<span class="org-doc">    The main entry point to the Router class.</span>
+<span class="org-doc">    """</span>
+    <span class="org-keyword">assert</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> <span class="org-keyword">in</span> <span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"http"</span>, <span class="org-string">"websocket"</span>, <span class="org-string">"lifespan"</span><span class="org-rainbow-delimiters-depth-1">)</span>
+
+    <span class="org-keyword">if</span> <span class="org-string">"router"</span> <span class="org-keyword">not</span> <span class="org-keyword">in</span> scope:
+        scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"router"</span><span class="org-rainbow-delimiters-depth-1">]</span> = <span class="org-keyword">self</span>
+
+    <span class="org-keyword">if</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> == <span class="org-string">"lifespan"</span>:
+        <span class="org-keyword">await</span> <span class="org-keyword">self</span>.lifespan<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">return</span>
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+
+
+<span class="org-keyword">async def</span> <span class="org-function-name">lifespan</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope, receive: Receive,
+                   send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+    <span class="org-doc">"""</span>
+<span class="org-doc">    Handle ASGI lifespan messages, which allows us to manage application</span>
+<span class="org-doc">    startup and shutdown events.</span>
+<span class="org-doc">    """</span>
+    started = <span class="org-constant">False</span>
+    app = scope.get<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"app"</span><span class="org-rainbow-delimiters-depth-1">)</span>
+    <span class="org-keyword">await</span> receive<span class="org-rainbow-delimiters-depth-1">()</span>
+    <span class="org-keyword">try</span>:
+        <span class="org-keyword">async with</span> <span class="org-keyword">self</span>.lifespan_context<span class="org-rainbow-delimiters-depth-1">(</span>app<span class="org-rainbow-delimiters-depth-1">)</span>:
+            <span class="org-keyword">await</span> send<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-rainbow-delimiters-depth-2">{</span><span class="org-string">"type"</span>: <span class="org-string">"lifespan.startup.complete"</span><span class="org-rainbow-delimiters-depth-2">}</span><span class="org-rainbow-delimiters-depth-1">)</span>
+            started = <span class="org-constant">True</span>
+            <span class="org-keyword">await</span> receive<span class="org-rainbow-delimiters-depth-1">()</span>
+    <span class="org-keyword">except</span> <span class="org-type">BaseException</span>:
+        exc_text = traceback.format_exc<span class="org-rainbow-delimiters-depth-1">()</span>
+        <span class="org-keyword">if</span> started:
+            <span class="org-keyword">await</span> send<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-rainbow-delimiters-depth-2">{</span>
+                <span class="org-string">"type"</span>: <span class="org-string">"lifespan.shutdown.failed"</span>,
+                <span class="org-string">"message"</span>: exc_text
+            <span class="org-rainbow-delimiters-depth-2">}</span><span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">else</span>:
+            <span class="org-keyword">await</span> send<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-rainbow-delimiters-depth-2">{</span>
+                <span class="org-string">"type"</span>: <span class="org-string">"lifespan.startup.failed"</span>,
+                <span class="org-string">"message"</span>: exc_text
+            <span class="org-rainbow-delimiters-depth-2">}</span><span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">raise</span>
+    <span class="org-keyword">else</span>:
+        <span class="org-keyword">await</span> send<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-rainbow-delimiters-depth-2">{</span><span class="org-string">"type"</span>: <span class="org-string">"lifespan.shutdown.complete"</span><span class="org-rainbow-delimiters-depth-2">}</span><span class="org-rainbow-delimiters-depth-1">)</span>
+</pre>
+</div>
+
+<p>
+如果实例化 Starlette 时传递的没有传递 lifespan ,那么会使用默认的 lifespan, 也就是使用调用 Router 对象的 startup 和 shutdown 执行存储的 <code>on_startup</code> 列表中的函数 和 <code>on_shutdown</code>  列表中的函数
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">async def</span> <span class="org-function-name">startup</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span><span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-doc">"""</span>
+<span class="org-doc">        Run any `.on_startup` event handlers.</span>
+<span class="org-doc">        """</span>
+        <span class="org-keyword">for</span> handler <span class="org-keyword">in</span> <span class="org-keyword">self</span>.on_startup:
+            <span class="org-keyword">if</span> is_async_callable<span class="org-rainbow-delimiters-depth-1">(</span>handler<span class="org-rainbow-delimiters-depth-1">)</span>:
+                <span class="org-keyword">await</span> handler<span class="org-rainbow-delimiters-depth-1">()</span>
+            <span class="org-keyword">else</span>:
+                handler<span class="org-rainbow-delimiters-depth-1">()</span>
+
+<span class="org-keyword">async def</span> <span class="org-function-name">shutdown</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span><span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        <span class="org-doc">"""</span>
+<span class="org-doc">        Run any `.on_shutdown` event handlers.</span>
+<span class="org-doc">        """</span>
+        <span class="org-keyword">for</span> handler <span class="org-keyword">in</span> <span class="org-keyword">self</span>.on_shutdown:
+            <span class="org-keyword">if</span> is_async_callable<span class="org-rainbow-delimiters-depth-1">(</span>handler<span class="org-rainbow-delimiters-depth-1">)</span>:
+                <span class="org-keyword">await</span> handler<span class="org-rainbow-delimiters-depth-1">()</span>
+            <span class="org-keyword">else</span>:
+                handler<span class="org-rainbow-delimiters-depth-1">()</span>
+</pre>
+</div>
+</div>
+</li>
+
+<li><a id="orge2ed57f"></a>路由匹配和执行<br />
+<div class="outline-text-5" id="text-1-1-4-2">
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">async def</span> <span class="org-function-name">__call__</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope, receive: Receive,
+                    send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+     <span class="org-comment-delimiter"># </span><span class="org-comment">....</span>
+
+     partial = <span class="org-constant">None</span>
+
+     <span class="org-keyword">for</span> route <span class="org-keyword">in</span> <span class="org-keyword">self</span>.<span class="org-variable-name">routes</span>:
+         <span class="org-comment-delimiter"># </span><span class="org-comment">Determine if any route matches the incoming scope,</span>
+         <span class="org-comment-delimiter"># </span><span class="org-comment">and hand over to the matching route if found.</span>
+         <span class="org-variable-name">match</span>, <span class="org-variable-name">child_scope</span> = route.matches<span class="org-rainbow-delimiters-depth-1">(</span>scope<span class="org-rainbow-delimiters-depth-1">)</span>
+         <span class="org-keyword">if</span> match == Match.FULL:
+             scope.update<span class="org-rainbow-delimiters-depth-1">(</span>child_scope<span class="org-rainbow-delimiters-depth-1">)</span>
+             <span class="org-keyword">await</span> route.handle<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+             <span class="org-keyword">return</span>
+         <span class="org-keyword">elif</span> match == Match.PARTIAL <span class="org-keyword">and</span> partial <span class="org-keyword">is</span> <span class="org-constant">None</span>:
+             partial = route
+             partial_scope = child_scope
+
+     <span class="org-keyword">if</span> partial <span class="org-keyword">is</span> <span class="org-keyword">not</span> <span class="org-constant">None</span>:
+         <span class="org-comment-delimiter">#  </span><span class="org-comment">Handle partial matches. These are cases where an endpoint is</span>
+         <span class="org-comment-delimiter"># </span><span class="org-comment">able to handle the request, but is not a preferred option.</span>
+         <span class="org-comment-delimiter"># </span><span class="org-comment">We use this in particular to deal with "405 Method Not Allowed".</span>
+         scope.update<span class="org-rainbow-delimiters-depth-1">(</span>partial_scope<span class="org-rainbow-delimiters-depth-1">)</span>
+         <span class="org-keyword">await</span> partial.handle<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+         <span class="org-keyword">return</span>
+
+     <span class="org-keyword">if</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> == <span class="org-string">"http"</span> <span class="org-keyword">and</span> <span class="org-keyword">self</span>.redirect_slashes <span class="org-keyword">and</span> scope<span class="org-rainbow-delimiters-depth-1">[</span>
+             <span class="org-string">"path"</span><span class="org-rainbow-delimiters-depth-1">]</span> != <span class="org-string">"/"</span>:
+         redirect_scope = <span class="org-builtin">dict</span><span class="org-rainbow-delimiters-depth-1">(</span>scope<span class="org-rainbow-delimiters-depth-1">)</span>
+         <span class="org-keyword">if</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"path"</span><span class="org-rainbow-delimiters-depth-1">]</span>.endswith<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"/"</span><span class="org-rainbow-delimiters-depth-1">)</span>:
+             redirect_scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"path"</span><span class="org-rainbow-delimiters-depth-1">]</span> = redirect_scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"path"</span><span class="org-rainbow-delimiters-depth-1">]</span>.rstrip<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"/"</span><span class="org-rainbow-delimiters-depth-1">)</span>
+         <span class="org-keyword">else</span>:
+             redirect_scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"path"</span><span class="org-rainbow-delimiters-depth-1">]</span> = redirect_scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"path"</span><span class="org-rainbow-delimiters-depth-1">]</span> + <span class="org-string">"/"</span>
+
+         <span class="org-keyword">for</span> route <span class="org-keyword">in</span> <span class="org-keyword">self</span>.routes:
+             <span class="org-variable-name">match</span>, <span class="org-variable-name">child_scope</span> = route.matches<span class="org-rainbow-delimiters-depth-1">(</span>redirect_scope<span class="org-rainbow-delimiters-depth-1">)</span>
+             <span class="org-keyword">if</span> match != Match.NONE:
+                 redirect_url = URL<span class="org-rainbow-delimiters-depth-1">(</span>scope=redirect_scope<span class="org-rainbow-delimiters-depth-1">)</span>
+                 response = RedirectResponse<span class="org-rainbow-delimiters-depth-1">(</span>url=<span class="org-builtin">str</span><span class="org-rainbow-delimiters-depth-2">(</span>redirect_url<span class="org-rainbow-delimiters-depth-2">)</span><span class="org-rainbow-delimiters-depth-1">)</span>
+                 <span class="org-keyword">await</span> response<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+                 <span class="org-keyword">return</span>
+
+     <span class="org-keyword">await</span> <span class="org-keyword">self</span>.default<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-variable-name">partial</span> = <span class="org-constant">None</span>
+
+<span class="org-keyword">for</span> route <span class="org-keyword">in</span> <span class="org-keyword">self</span>.<span class="org-variable-name">routes</span>:
+    <span class="org-comment-delimiter"># </span><span class="org-comment">Determine if any route matches the incoming scope,</span>
+    <span class="org-comment-delimiter"># </span><span class="org-comment">and hand over to the matching route if found.</span>
+    <span class="org-variable-name">match</span>, <span class="org-variable-name">child_scope</span> = route.matches<span class="org-rainbow-delimiters-depth-1">(</span>scope<span class="org-rainbow-delimiters-depth-1">)</span>
+    <span class="org-keyword">if</span> match == Match.FULL:
+        scope.update<span class="org-rainbow-delimiters-depth-1">(</span>child_scope<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">await</span> route.handle<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">return</span>
+    <span class="org-keyword">elif</span> match == Match.PARTIAL <span class="org-keyword">and</span> partial <span class="org-keyword">is</span> <span class="org-constant">None</span>:
+        partial = route
+        partial_scope = child_scope
+</pre>
+</div>
+
+<p>
+这里就是路由匹配的核心代码了, 遍历 Router 中的元素, 调用其 matches 方法进行匹配, 如果完全匹配了就调用该元素的 handle 方法, 传递(scope, receive, send) 给他, 然后就结束调用流程了
+</p>
+
+<p>
+<b>Tips</b>: 这里可以看出, 只要定义的 Route 对象具有 matches 方法 和 handle 方法就可以完成最基本路由匹配与执行, 所以完全可以自定义 Route 类型, 比如自定义一些嵌套的路由, 实际上 starlette 的 Mount 就是 Route 的变体
+</p>
+</div>
+
+<ol class="org-ol">
+<li><a id="org60a1126"></a>接下来看一下 Route 对象的mathces 和 handle 方法<br />
+<ol class="org-ol">
+<li><a id="orgf9fd2bf"></a>matches<br />
+<div class="outline-text-7" id="text-1-1-4-2-1-1">
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">def</span> <span class="org-function-name">matches</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; typing.Tuple<span class="org-rainbow-delimiters-depth-1">[</span>Match, Scope<span class="org-rainbow-delimiters-depth-1">]</span>:
+    <span class="org-keyword">if</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"type"</span><span class="org-rainbow-delimiters-depth-1">]</span> == <span class="org-string">"http"</span>:
+        match = <span class="org-keyword">self</span>.path_regex.match<span class="org-rainbow-delimiters-depth-1">(</span>scope<span class="org-rainbow-delimiters-depth-2">[</span><span class="org-string">"path"</span><span class="org-rainbow-delimiters-depth-2">]</span><span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">if</span> match:
+            matched_params = match.groupdict<span class="org-rainbow-delimiters-depth-1">()</span>
+            <span class="org-keyword">for</span> key, value <span class="org-keyword">in</span> matched_params.items<span class="org-rainbow-delimiters-depth-1">()</span>:
+                matched_params<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-variable-name">key</span><span class="org-rainbow-delimiters-depth-1">]</span> = <span class="org-keyword">self</span>.param_convertors<span class="org-rainbow-delimiters-depth-1">[</span>key<span class="org-rainbow-delimiters-depth-1">]</span>.convert<span class="org-rainbow-delimiters-depth-1">(</span>
+                    value<span class="org-rainbow-delimiters-depth-1">)</span>
+            path_params = <span class="org-builtin">dict</span><span class="org-rainbow-delimiters-depth-1">(</span>scope.get<span class="org-rainbow-delimiters-depth-2">(</span><span class="org-string">"path_params"</span>, <span class="org-rainbow-delimiters-depth-3">{}</span><span class="org-rainbow-delimiters-depth-2">)</span><span class="org-rainbow-delimiters-depth-1">)</span>
+            path_params.update<span class="org-rainbow-delimiters-depth-1">(</span>matched_params<span class="org-rainbow-delimiters-depth-1">)</span>
+            child_scope = <span class="org-rainbow-delimiters-depth-1">{</span>
+                <span class="org-string">"endpoint"</span>: <span class="org-keyword">self</span>.endpoint,
+                <span class="org-string">"path_params"</span>: path_params
+            <span class="org-rainbow-delimiters-depth-1">}</span>
+            <span class="org-keyword">if</span> <span class="org-keyword">self</span>.methods <span class="org-keyword">and</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"method"</span><span class="org-rainbow-delimiters-depth-1">]</span> <span class="org-keyword">not</span> <span class="org-keyword">in</span> <span class="org-keyword">self</span>.methods:
+                <span class="org-keyword">return</span> Match.PARTIAL, child_scope
+            <span class="org-keyword">else</span>:
+                <span class="org-keyword">return</span> Match.FULL, child_scope
+    <span class="org-keyword">return</span> Match.NONE, <span class="org-rainbow-delimiters-depth-1">{}</span>
+</pre>
+</div>
+
+<p>
+<code>self.path_regex.match(scope["path"])</code> 这一行是通过正则表达去匹配当前请求的路径, 这个正则表达式是在Route对象创建时构建的, 代码如下:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-variable-name">CONVERTOR_TYPES</span> = <span class="org-rainbow-delimiters-depth-1">{</span>
+    <span class="org-string">"str"</span>: StringConvertor<span class="org-rainbow-delimiters-depth-2">()</span>,
+    <span class="org-string">"path"</span>: PathConvertor<span class="org-rainbow-delimiters-depth-2">()</span>,
+    <span class="org-string">"int"</span>: IntegerConvertor<span class="org-rainbow-delimiters-depth-2">()</span>,
+    <span class="org-string">"float"</span>: FloatConvertor<span class="org-rainbow-delimiters-depth-2">()</span>,
+    <span class="org-string">"uuid"</span>: UUIDConvertor<span class="org-rainbow-delimiters-depth-2">()</span>,
+<span class="org-rainbow-delimiters-depth-1">}</span>
+<span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+<span class="org-variable-name">PARAM_REGEX</span> = re.<span class="org-builtin">compile</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}"</span><span class="org-rainbow-delimiters-depth-1">)</span>
+<span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+<span class="org-keyword">for</span> match <span class="org-keyword">in</span> PARAM_REGEX.finditer<span class="org-rainbow-delimiters-depth-1">(</span>path<span class="org-rainbow-delimiters-depth-1">)</span>:
+        <span class="org-variable-name">param_name</span>, <span class="org-variable-name">convertor_type</span> = match.groups<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"str"</span><span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-variable-name">convertor_type</span> = convertor_type.lstrip<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">":"</span><span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">assert</span> <span class="org-rainbow-delimiters-depth-1">(</span>
+            convertor_type
+            <span class="org-keyword">in</span> CONVERTOR_TYPES<span class="org-rainbow-delimiters-depth-1">)</span>, f<span class="org-string">"Unknown path convertor '</span>{convertor_type}<span class="org-string">'"</span>
+        <span class="org-variable-name">convertor</span> = CONVERTOR_TYPES<span class="org-rainbow-delimiters-depth-1">[</span>convertor_type<span class="org-rainbow-delimiters-depth-1">]</span>
+        <span class="org-variable-name">path_regex</span> += re.escape<span class="org-rainbow-delimiters-depth-1">(</span>path<span class="org-rainbow-delimiters-depth-2">[</span><span class="org-variable-name">idx</span>:match.start<span class="org-rainbow-delimiters-depth-3">()</span><span class="org-rainbow-delimiters-depth-2">]</span><span class="org-rainbow-delimiters-depth-1">)</span>
+        path_regex += f<span class="org-string">"(?P&lt;</span>{param_name}<span class="org-string">&gt;</span>{convertor.regex}<span class="org-string">)"</span>
+<span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+</pre>
+</div>
+
+<p>
+如果匹配到了, 那么检查是否有路径参数, 如果有路径参数, 那么提取出路径参数, 并且对路径参数进行格式转换 <code>self.param_convertors[key].convert(value)</code>
+</p>
+
+<p>
+<b>Tips</b>: 路由参数进行格式转换是可以自定义的, 只要参考 <code>starlette.converters</code> 下的 Converter 类, 并且将其添加到 <code>CONVERTOR_TYPES</code> 中既可以
+</p>
+</div>
+</li>
+
+<li><a id="org6d991e6"></a>handle<br />
+<div class="outline-text-7" id="text-1-1-4-2-1-2">
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">async def</span> <span class="org-function-name">handle</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope: Scope, receive: Receive, send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+    <span class="org-keyword">if</span> <span class="org-keyword">self</span>.methods <span class="org-keyword">and</span> scope<span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"method"</span><span class="org-rainbow-delimiters-depth-1">]</span> <span class="org-keyword">not</span> <span class="org-keyword">in</span> <span class="org-keyword">self</span>.methods:
+        headers = <span class="org-rainbow-delimiters-depth-1">{</span><span class="org-string">"Allow"</span>: <span class="org-string">", "</span>.join<span class="org-rainbow-delimiters-depth-2">(</span><span class="org-keyword">self</span>.methods<span class="org-rainbow-delimiters-depth-2">)</span><span class="org-rainbow-delimiters-depth-1">}</span>
+        <span class="org-keyword">if</span> <span class="org-string">"app"</span> <span class="org-keyword">in</span> scope:
+            <span class="org-keyword">raise</span> HTTPException<span class="org-rainbow-delimiters-depth-1">(</span>status_code=405, headers=headers<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">else</span>:
+            response = PlainTextResponse<span class="org-rainbow-delimiters-depth-1">(</span><span class="org-string">"Method Not Allowed"</span>,
+                                         status_code=405,
+                                         headers=headers<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">await</span> response<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+    <span class="org-keyword">else</span>:
+        <span class="org-keyword">await</span> <span class="org-keyword">self</span>.app<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+</pre>
+</div>
+
+<p>
+这里先判断请求方法是否在方法列表中, 如果不再直接抛出 405 Http 异常
+</p>
+
+<p>
+否则调用 <code>Route.app(scope,receive,send)</code> 那么这里关键的代码就是 app 这个属性中了, 看一下属性的内容
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">def</span> <span class="org-function-name">request_response</span><span class="org-rainbow-delimiters-depth-1">(</span>func: typing.Callable<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; ASGIApp:
+    <span class="org-doc">"""</span>
+<span class="org-doc">    Takes a function or coroutine `func(request) -&gt; response`,</span>
+<span class="org-doc">    and returns an ASGI application.</span>
+<span class="org-doc">    """</span>
+    <span class="org-variable-name">is_coroutine</span> = is_async_callable<span class="org-rainbow-delimiters-depth-1">(</span>func<span class="org-rainbow-delimiters-depth-1">)</span>
+
+    <span class="org-keyword">async def</span> <span class="org-function-name">app</span><span class="org-rainbow-delimiters-depth-1">(</span>scope: Scope, receive: Receive, send: Send<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+        request = Request<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive=receive, send=send<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">if</span> is_coroutine:
+            response = <span class="org-keyword">await</span> func<span class="org-rainbow-delimiters-depth-1">(</span>request<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">else</span>:
+            response = <span class="org-keyword">await</span> run_in_threadpool<span class="org-rainbow-delimiters-depth-1">(</span>func, request<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">await</span> response<span class="org-rainbow-delimiters-depth-1">(</span>scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>
+
+    <span class="org-keyword">return</span> app
+
+<span class="org-comment-delimiter"># </span><span class="org-comment">....</span>
+
+<span class="org-keyword">def</span> <span class="org-function-name">__init__</span><span class="org-rainbow-delimiters-depth-1">(</span>
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+    endpoint: typing.Callable,
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+<span class="org-rainbow-delimiters-depth-1">)</span> -&gt; <span class="org-constant">None</span>:
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+    <span class="org-keyword">self</span>.endpoint = endpoint
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+    <span class="org-keyword">if</span> inspect.isfunction<span class="org-rainbow-delimiters-depth-1">(</span>endpoint_handler<span class="org-rainbow-delimiters-depth-1">)</span> <span class="org-keyword">or</span> inspect.ismethod<span class="org-rainbow-delimiters-depth-1">(</span>
+            endpoint_handler<span class="org-rainbow-delimiters-depth-1">)</span>:
+        <span class="org-comment-delimiter"># </span><span class="org-comment">Endpoint is function or method. Treat it as `func(request) -&gt; response`.</span>
+        <span class="org-keyword">self</span>.app = request_response<span class="org-rainbow-delimiters-depth-1">(</span>endpoint<span class="org-rainbow-delimiters-depth-1">)</span>
+        <span class="org-keyword">if</span> methods <span class="org-keyword">is</span> <span class="org-constant">None</span>:
+            methods = <span class="org-rainbow-delimiters-depth-1">[</span><span class="org-string">"GET"</span><span class="org-rainbow-delimiters-depth-1">]</span>
+    <span class="org-keyword">else</span>:
+        <span class="org-comment-delimiter"># </span><span class="org-comment">Endpoint is a class. Treat it as ASGI.</span>
+        <span class="org-keyword">self</span>.app = endpoint
+    <span class="org-comment-delimiter"># </span><span class="org-comment">...</span>
+</pre>
+</div>
+
+<p>
+如果 endpoint 是函数对着方法, 那么就通过 <code>request_response</code> 包装一层, 执行的时候就是:
+</p>
+<ul class="org-ul">
+<li>如果是携程对象, 就直接 await</li>
+<li>如果是普通函数, 就再线程池中执行</li>
+</ul>
+
+<p>
+<b>Tips</b>:如果不是函数或者方法, 就把它当做一个普通类, 从代码中看出, 这个endpoint 类的实例化时应当接受(scope,receive,send)
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span class="org-keyword">class</span> <span class="org-type">Endp</span>:
+
+    <span class="org-keyword">async def</span> <span class="org-function-name">__new__</span><span class="org-rainbow-delimiters-depth-1">(</span>cls, scope, receive, send, *args, **kwargs<span class="org-rainbow-delimiters-depth-1">)</span>:
+        <span class="org-keyword">pass</span>
+
+
+<span class="org-keyword">class</span> <span class="org-type">Endpx</span>:
+
+    <span class="org-keyword">def</span> <span class="org-function-name">__init__</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span>, scope, receive, send<span class="org-rainbow-delimiters-depth-1">)</span>:
+        <span class="org-keyword">pass</span>
+
+    <span class="org-keyword">def</span> <span class="org-function-name">__await__</span><span class="org-rainbow-delimiters-depth-1">(</span><span class="org-keyword">self</span><span class="org-rainbow-delimiters-depth-1">)</span>:
+        <span class="org-keyword">return</span> &#21487;&#31561;&#24453;&#23545;&#35937;
+
+</pre>
+</div>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Mering Gao</p>
+<p class="date">Created: 2022-11-28 Mon 20:52</p>
+</div>
+</body>
+</html>
